@@ -7,14 +7,131 @@ import java.util.Set;
 
 import javax.persistence.*;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.hibernate.annotations.ForeignKey;
 
-public class Concert {
+import asg.concert.common.jackson.LocalDateTimeDeserializer;
+import asg.concert.common.jackson.LocalDateTimeSerializer;
 
-    // TODO Implement this class.
+@Entity
+public class Concert implements Comparable<Concert> {
 
-    public Set<LocalDateTime> getDates() {
-        return null;
-    }
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
+        private String title;
+        
+        private String imageName;
+        private String blurb;
+        
+        @JsonSerialize(using = LocalDateTimeSerializer.class)
+        @JsonDeserialize(using = LocalDateTimeDeserializer.class)   
+        @ElementCollection
+        @CollectionTable(
+            name = "Concert_Dates",
+            joinColumns = @JoinColumn(name = "id")
+        )
+        @Column(name="Date")
+        private Set<LocalDateTime> dates = new HashSet<>();
+        @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+        private Set<Performer> performers = new HashSet<>();
+    
+        public Concert() {
+        }
+    
+        public Concert(Long id, String title, String imageName, String blurb) {
+            this.id = id;
+            this.title = title;
+            this.imageName = imageName;
+            this.blurb = blurb;
+        }
+    
+        public Concert(String title, String imageName) {
+            this.title = title;
+            this.imageName = imageName;
+        }
+    
+        public Long getId() {
+            return id;
+        }
+    
+        public void setId(Long id) {
+            this.id = id;
+        }
+    
+        public String getTitle() {
+            return title;
+        }
+    
+        public void setTitle(String title) {
+            this.title = title;
+        }
+    
+        public String getImageName() {
+            return imageName;
+        }
+    
+        public void setImageName(String imageName) {
+            this.imageName = imageName;
+        }
+    
+        public String getBlurb() {
+            return blurb;
+        }
+    
+        public void setBlurb(String blurb) {
+            this.blurb = blurb;
+        }
+    
+        public Set<LocalDateTime> getDates() {
+            return dates;
+        }
+    
+        public void setDates(Set<LocalDateTime> dates) {
+            this.dates = dates;
+        }
+    
+        public Set<Performer> getPerformers() {
+            return performers;
+        }
+    
+        public void setPerformers(Set<Performer> performers) {
+            this.performers = performers;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            // Implement value-equality based on a Concert's title alone. ID isn't
+            // included in the equality check because two Concert objects could
+            // represent the same real-world Concert, where one is stored in the
+            // database (and therefore has an ID - a primary key) and the other
+            // doesn't (it exists only in memory).
+            if (!(obj instanceof Concert))
+                return false;
+            if (obj == this)
+                return true;
+    
+            Concert rhs = (Concert) obj;
+            return new EqualsBuilder().
+                    append(title, rhs.title).
+                    isEquals();
+        }
+    
+        @Override
+        public int hashCode() {
+            // Hash-code value is derived from the value of the title field. It's
+            // good practice for the hash code to be generated based on a value
+            // that doesn't change.
+            return new HashCodeBuilder(17, 31).
+                    append(title).hashCode();
+        }
+    
+        @Override
+        public int compareTo(Concert concert) {
+            return title.compareTo(concert.getTitle());
+        }
 }
