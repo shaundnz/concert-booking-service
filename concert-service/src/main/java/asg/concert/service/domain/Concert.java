@@ -18,26 +18,36 @@ import asg.concert.common.jackson.LocalDateTimeDeserializer;
 import asg.concert.common.jackson.LocalDateTimeSerializer;
 
 @Entity
+@Table(name = "Concerts")
 public class Concert implements Comparable<Concert> {
 
         @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        //@GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
         private String title;
-        
+
+        @Column(name="IMAGE_NAME")
         private String imageName;
+
+        @Column(name="BLURB", length = 1000)
         private String blurb;
         
         @JsonSerialize(using = LocalDateTimeSerializer.class)
         @JsonDeserialize(using = LocalDateTimeDeserializer.class)   
         @ElementCollection
         @CollectionTable(
-            name = "Concert_Dates",
-            joinColumns = @JoinColumn(name = "id")
+            name = "CONCERT_DATES",
+            joinColumns = @JoinColumn(name = "CONCERT_ID", referencedColumnName = "id")
         )
-        @Column(name="Date")
+        @Column(name="DATE")
         private Set<LocalDateTime> dates = new HashSet<>();
-        @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+
+        @ManyToMany(cascade = { CascadeType.ALL }, targetEntity = Performer.class, fetch = FetchType.EAGER)
+        @JoinTable(
+            name = "CONCERT_PERFORMER",
+            joinColumns = { @JoinColumn(name = "CONCERT_ID", referencedColumnName = "id") },
+            inverseJoinColumns = { @JoinColumn(name = "PERFORMER_ID", referencedColumnName = "id") }
+        )
         private Set<Performer> performers = new HashSet<>();
     
         public Concert() {

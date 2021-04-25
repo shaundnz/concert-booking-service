@@ -3,6 +3,7 @@ package asg.concert.service.domain;
 import javax.persistence.*;
 
 @Entity
+@Table(name = "Users")
 public class User {
 
     @Id
@@ -16,6 +17,10 @@ public class User {
         this.username = username;
         this.password = password;
         this.version = version;
+    }
+
+    public User() {
+
     }
 
     public Long getId() {

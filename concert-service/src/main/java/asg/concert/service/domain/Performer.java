@@ -4,33 +4,40 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import javax.persistence.*;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
+@Table(name = "Performers")
 public class Performer {
     
         @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        //@GeneratedValue(strategy = GenerationType.IDENTITY)
         //automatically assigns a PK (id) to the object and inserts a value
         private Long id;
         private String name;
-        private String imageUri;
+        @Column(name="IMAGE_NAME")
+        private String imageName;
+        @Column(name="BLURB", length = 1000)
+        private String blurb;
     
         @Enumerated(EnumType.STRING)
         //Genre class is ordered alphabetically base on the Genre class
         private Genre genre;
+
+        @ManyToMany(mappedBy = "performers", targetEntity = Concert.class)
+        private Set<Concert> concerts = new HashSet<>();
     
         public Performer() { }
     
-        public Performer(Long id, String name, String imageUri, Genre genre) {
+        public Performer(Long id, String name, String imageName, Genre genre, String blurb) {
             this.id = id;
             this.name = name;
-            this.imageUri = imageUri;
+            this.imageName = imageName;
             this.genre = genre;
+            this.blurb = blurb;
         }
-    
-        public Performer(String name, String imageUri, Genre genre) {
-            this(null, name, imageUri, genre);
-        }
+
     
         public Long getId() {
             return id;
@@ -48,12 +55,12 @@ public class Performer {
             this.name = name;
         }
     
-        public String getImageUri() {
-            return imageUri;
+        public String getImageName() {
+            return imageName;
         }
     
-        public void setImageUri(String imageUri) {
-            this.imageUri = imageUri;
+        public void setImageName(String imageUri) {
+            this.imageName = imageUri;
         }
     
         public Genre getGenre() {
@@ -72,7 +79,7 @@ public class Performer {
             buffer.append(", name: ");
             buffer.append(name);
             buffer.append(", s3 image: ");
-            buffer.append(imageUri);
+            buffer.append(imageName);
             buffer.append(", genre: ");
             buffer.append(genre.toString());
     
@@ -97,4 +104,20 @@ public class Performer {
             return new HashCodeBuilder(17, 31).
                     append(name).hashCode();
         }
+
+    public String getBlurb() {
+        return blurb;
+    }
+
+    public void setBlurb(String blurb) {
+        this.blurb = blurb;
+    }
+
+    public Set<Concert> getConcerts() {
+        return concerts;
+    }
+
+    public void setConcerts(Set<Concert> concerts) {
+        this.concerts = concerts;
+    }
 }
