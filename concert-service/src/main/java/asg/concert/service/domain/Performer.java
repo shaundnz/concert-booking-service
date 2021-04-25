@@ -4,6 +4,9 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import javax.persistence.*;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,8 +29,8 @@ public class Performer {
         @Column(name="BLURB", length = 1000)
         private String blurb;
 
-
-        @ManyToMany(mappedBy = "performers", targetEntity = Concert.class)
+        @JsonIgnore
+        @ManyToMany(mappedBy = "performers", targetEntity = Concert.class, fetch = FetchType.EAGER)
         private Set<Concert> concerts = new HashSet<>();
 
         public Performer() { }

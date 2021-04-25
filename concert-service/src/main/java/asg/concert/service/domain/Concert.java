@@ -1,19 +1,16 @@
 package asg.concert.service.domain;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 import javax.persistence.*;
-import javax.persistence.criteria.Fetch;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.hibernate.annotations.ForeignKey;
 
 import asg.concert.common.jackson.LocalDateTimeDeserializer;
 import asg.concert.common.jackson.LocalDateTimeSerializer;
@@ -32,12 +29,12 @@ public class Concert implements Comparable<Concert> {
         @Column(name="BLURB", length = 1000)
         private String blurb;
         
-        @JsonSerialize(using = LocalDateTimeSerializer.class)
-        @JsonDeserialize(using = LocalDateTimeDeserializer.class)   
-        @ElementCollection
+        @JsonSerialize(contentUsing = LocalDateTimeSerializer.class)
+        @JsonDeserialize(contentUsing = LocalDateTimeDeserializer.class)   
+        @ElementCollection(fetch = FetchType.EAGER)
         @CollectionTable(
             name = "CONCERT_DATES",
-            joinColumns = @JoinColumn(name = "CONCERT_ID", referencedColumnName = "id")
+            joinColumns = { @JoinColumn(name = "CONCERT_ID", referencedColumnName = "id") }
         )
         @Column(name="DATE")
         private Set<LocalDateTime> dates = new HashSet<>();
