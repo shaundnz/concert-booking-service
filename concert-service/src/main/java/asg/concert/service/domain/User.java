@@ -19,6 +19,10 @@ public class User {
         this.version = version;
     }
 
+    public User () {
+        
+    }
+
     public Long getId() {
         return id;
     }

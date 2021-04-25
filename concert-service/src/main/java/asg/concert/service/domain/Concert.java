@@ -41,8 +41,12 @@ public class Concert implements Comparable<Concert> {
         )
         @Column(name="DATE")
         private Set<LocalDateTime> dates = new HashSet<>();
-        @OneToMany(mappedBy = "concert", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-        @Column(name="CONCERT_ID")
+        @ManyToMany(targetEntity = Performer.class, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+        @JoinTable(
+                name="CONCERT_PERFORMER",
+                joinColumns = { @JoinColumn(name = "CONCERT_ID", referencedColumnName = "id") },
+                inverseJoinColumns = { @JoinColumn(name = "PERFORMER_ID", referencedColumnName = "id") }
+        )
         private Set<Performer> performers = new HashSet<>();
     
         public Concert() {

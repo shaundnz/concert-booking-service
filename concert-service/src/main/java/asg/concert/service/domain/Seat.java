@@ -15,8 +15,13 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import asg.concert.common.jackson.LocalDateTimeDeserializer;
 import asg.concert.common.jackson.LocalDateTimeSerializer;
 
+@Entity
+@Table(name="Seats")
 public class Seat {
-
+	
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private long id;
 	private String label;
 	private boolean isBooked;
 	

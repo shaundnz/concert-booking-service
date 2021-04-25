@@ -24,10 +24,6 @@ public class Performer {
         @Column(name="BLURB", length = 1000)
         private String blurb;
 
-        @ManyToOne
-        @JoinColumn(name = "PERFORMER_ID", referencedColumnName = "id")
-        private Concert concert;
-
         public Performer() { }
     
         public Performer(Long id, String name, String imageUri, Genre genre) {
@@ -73,6 +69,14 @@ public class Performer {
             this.genre = genre;
         }
     
+        public String getBlurb() {
+            return blurb;
+        }
+    
+        public void setBlurb(String blurb) {
+            this.blurb = blurb;
+        }
+        
         @Override
         public String toString() {
             StringBuffer buffer = new StringBuffer();
