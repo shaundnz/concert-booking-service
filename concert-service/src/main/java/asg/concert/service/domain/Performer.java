@@ -6,19 +6,28 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import javax.persistence.*;
 
 @Entity
+@Table(name = "Performers")
 public class Performer {
     
         @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
+      //  @GeneratedValue(strategy = GenerationType.IDENTITY)
         //automatically assigns a PK (id) to the object and inserts a value
         private Long id;
         private String name;
+        @Column(name="IMAGE_NAME")
         private String imageUri;
     
         @Enumerated(EnumType.STRING)
         //Genre class is ordered alphabetically base on the Genre class
         private Genre genre;
-    
+
+        @Column(name="BLURB", length = 1000)
+        private String blurb;
+
+        @ManyToOne
+        @JoinColumn(name = "PERFORMER_ID", referencedColumnName = "id")
+        private Concert concert;
+
         public Performer() { }
     
         public Performer(Long id, String name, String imageUri, Genre genre) {

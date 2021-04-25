@@ -3,6 +3,7 @@ package asg.concert.service.domain;
 import javax.persistence.*;
 
 @Entity
+@Table(name = "Users")
 public class User {
 
     @Id
