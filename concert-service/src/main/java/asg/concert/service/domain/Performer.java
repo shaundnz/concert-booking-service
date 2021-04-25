@@ -12,22 +12,24 @@ import java.util.Set;
 public class Performer {
     
         @Id
-        //@GeneratedValue(strategy = GenerationType.IDENTITY)
+      //  @GeneratedValue(strategy = GenerationType.IDENTITY)
         //automatically assigns a PK (id) to the object and inserts a value
         private Long id;
         private String name;
         @Column(name="IMAGE_NAME")
         private String imageName;
-        @Column(name="BLURB", length = 1000)
-        private String blurb;
     
         @Enumerated(EnumType.STRING)
         //Genre class is ordered alphabetically base on the Genre class
         private Genre genre;
 
+        @Column(name="BLURB", length = 1000)
+        private String blurb;
+
+
         @ManyToMany(mappedBy = "performers", targetEntity = Concert.class)
         private Set<Concert> concerts = new HashSet<>();
-    
+
         public Performer() { }
     
         public Performer(Long id, String name, String imageName, Genre genre, String blurb) {
@@ -70,7 +72,7 @@ public class Performer {
         public void setGenre(Genre genre) {
             this.genre = genre;
         }
-    
+
         @Override
         public String toString() {
             StringBuffer buffer = new StringBuffer();

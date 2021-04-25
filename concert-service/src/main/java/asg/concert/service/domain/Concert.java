@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.persistence.*;
+import javax.persistence.criteria.Fetch;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -28,7 +29,6 @@ public class Concert implements Comparable<Concert> {
 
         @Column(name="IMAGE_NAME")
         private String imageName;
-
         @Column(name="BLURB", length = 1000)
         private String blurb;
         
@@ -41,12 +41,11 @@ public class Concert implements Comparable<Concert> {
         )
         @Column(name="DATE")
         private Set<LocalDateTime> dates = new HashSet<>();
-
-        @ManyToMany(cascade = { CascadeType.ALL }, targetEntity = Performer.class, fetch = FetchType.EAGER)
+        @ManyToMany(targetEntity = Performer.class, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
         @JoinTable(
-            name = "CONCERT_PERFORMER",
-            joinColumns = { @JoinColumn(name = "CONCERT_ID", referencedColumnName = "id") },
-            inverseJoinColumns = { @JoinColumn(name = "PERFORMER_ID", referencedColumnName = "id") }
+                name="CONCERT_PERFORMER",
+                joinColumns = { @JoinColumn(name = "CONCERT_ID", referencedColumnName = "id") },
+                inverseJoinColumns = { @JoinColumn(name = "PERFORMER_ID", referencedColumnName = "id") }
         )
         private Set<Performer> performers = new HashSet<>();
     
