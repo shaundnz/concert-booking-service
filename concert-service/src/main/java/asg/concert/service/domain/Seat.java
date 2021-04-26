@@ -2,6 +2,7 @@ package asg.concert.service.domain;
 
 import javax.persistence.*;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -23,10 +24,12 @@ public class Seat {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
 	private String label;
+	@JsonIgnore
 	private boolean isBooked;
 	
-	@JsonSerialize(using = LocalDateTimeSerializer.class)
-    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
+	@JsonIgnore
+	//@JsonSerialize(using = LocalDateTimeSerializer.class)
+    //@JsonDeserialize(using = LocalDateTimeDeserializer.class)
 	private LocalDateTime date;
 	private BigDecimal price;
 	

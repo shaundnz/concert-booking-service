@@ -1,4 +1,4 @@
-package asg.concert.common.dto;
+package asg.concert.service.domain;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -10,35 +10,32 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import asg.concert.common.jackson.LocalDateTimeDeserializer;
 import asg.concert.common.jackson.LocalDateTimeSerializer;
 
-/**
- * Represents a completed booking.
- * concertId   the id of the concert which was booked
- * date        the date on which that concert was booked
- * seats       the seats which were booked for that concert on that date
- */
-public class BookingDTO {
+public class BookingRequest {
 
-    private long concertId;
-
+    private Long concertId;
     @JsonSerialize(using = LocalDateTimeSerializer.class)
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     private LocalDateTime date;
-    private List<SeatDTO> seats = new ArrayList<>();
+    private List<String> seatLabels = new ArrayList<>();
 
-    public BookingDTO() {
-    }
+    public BookingRequest(){}
 
-    public BookingDTO(long concertId, LocalDateTime date, List<SeatDTO> seats) {
+    public BookingRequest(Long concertId, LocalDateTime date) {
         this.concertId = concertId;
         this.date = date;
-        this.seats = seats;
     }
 
-    public long getConcertId() {
+    public BookingRequest(Long concertId, LocalDateTime date, List<String> seatLabels) {
+        this.concertId = concertId;
+        this.date = date;
+        this.seatLabels = seatLabels;
+    }
+
+    public Long getConcertId() {
         return concertId;
     }
 
-    public void setConcertId(long concertId) {
+    public void setConcertId(Long concertId) {
         this.concertId = concertId;
     }
 
@@ -50,11 +47,12 @@ public class BookingDTO {
         this.date = date;
     }
 
-    public List<SeatDTO> getSeats() {
-        return seats;
+    public List<String> getSeatLabels() {
+        return seatLabels;
     }
 
-    public void setSeats(List<SeatDTO> seats) {
-        this.seats = seats;
+    public void setSeatLabels(List<String> seatLabels) {
+        this.seatLabels = seatLabels;
     }
 }
+
