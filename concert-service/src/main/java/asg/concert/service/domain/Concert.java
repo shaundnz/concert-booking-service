@@ -23,7 +23,7 @@ import asg.concert.common.jackson.LocalDateTimeSerializer;
 public class Concert implements Comparable<Concert> {
 
         @Id
-        //@GeneratedValue(strategy = GenerationType.IDENTITY)
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
         private String title;
 

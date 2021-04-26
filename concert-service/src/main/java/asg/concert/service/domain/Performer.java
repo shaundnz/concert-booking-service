@@ -12,7 +12,7 @@ import java.util.Set;
 public class Performer {
     
         @Id
-      //  @GeneratedValue(strategy = GenerationType.IDENTITY)
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
         //automatically assigns a PK (id) to the object and inserts a value
         private Long id;
         private String name;
