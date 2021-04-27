@@ -1,5 +1,7 @@
 package asg.concert.service.domain;
 
+import java.util.UUID;
+
 import javax.persistence.*;
 
 @Entity
@@ -12,6 +14,7 @@ public class User {
     private String username;
     private String password;
     private Long version;
+    private String authCookie;
 
     public User (Long id, String username, String password, Long version) {
         this.id = id;
@@ -54,5 +57,13 @@ public class User {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    public String getAuthToken() {
+        return authCookie;
+    }
+
+    public void setAuthToken(String authCookie) {
+        this.authCookie = authCookie;
     }
 }

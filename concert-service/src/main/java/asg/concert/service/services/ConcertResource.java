@@ -1,20 +1,27 @@
 package asg.concert.service.services;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+import javax.annotation.security.RolesAllowed;
 import javax.persistence.*;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 
-
+import org.hibernate.annotations.NotFound;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import asg.concert.service.domain.*;
+import asg.concert.service.jaxrs.LocalDateTimeParam;
 
 @Produces({
     MediaType.APPLICATION_JSON,
@@ -34,6 +41,7 @@ public class ConcertResource {
         @PathParam("id") Long id) {
         em.getTransaction().begin();
         Concert concert = em.find(Concert.class, id);
+        em.getTransaction().commit(); 
         em.close();
         if (concert != null) {
             return Response
@@ -53,7 +61,9 @@ public class ConcertResource {
         em.getTransaction().begin();
         TypedQuery<Concert> concertQuery = em.createQuery("select c from Concert c", Concert.class);
         List<Concert> concertList = concertQuery.getResultList();
+        em.getTransaction().commit(); 
         em.close();
+
         return Response
             .ok(concertList)
             .build();
@@ -65,6 +75,7 @@ public class ConcertResource {
         em.getTransaction().begin();
         TypedQuery<ConcertSummary> concertQuery = em.createQuery("select new asg.concert.service.domain.ConcertSummary(c.id, c.title, c.imageName) from Concert c", ConcertSummary.class);
         List<ConcertSummary> concertList = concertQuery.getResultList();
+        em.getTransaction().commit(); 
         em.close();
         return Response
             .ok(concertList)
@@ -77,6 +88,7 @@ public class ConcertResource {
         @PathParam("id") Long id) {
         em.getTransaction().begin();
         Performer performer = em.find(Performer.class, id);
+        em.getTransaction().commit(); 
         em.close();
         if (performer != null) {
             return Response
@@ -96,6 +108,7 @@ public class ConcertResource {
         em.getTransaction().begin();
         TypedQuery<Performer> performerQuery = em.createQuery("select p from Performer p", Performer.class);
         List<Performer> performerList = performerQuery.getResultList();
+        em.getTransaction().commit(); 
         em.close();
         return Response
             .ok(performerList)
@@ -105,22 +118,165 @@ public class ConcertResource {
     @POST
     @Path("/login")
     public Response attemptLogin(User user) {
+        User found_user = null;
         try {
             em.getTransaction().begin();
             TypedQuery<User> userQuery = em.createQuery("SELECT u FROM User u WHERE u.username = '" + user.getUsername() + "' AND u.password = '" + user.getPassword() + "'", User.class);
-            User found_user = userQuery.getSingleResult();
-            em.close();
+            found_user = userQuery.getSingleResult();
         }
         catch (Exception e) {
+            em.getTransaction().commit(); 
             em.close();
             return Response
                 .status(401)
                 .build();
         }
-    
+        String authToken = UUID.randomUUID().toString();
+        found_user.setAuthToken(authToken);
+        em.merge(found_user);
+        em.getTransaction().commit();
+        em.close();
         return Response
             .ok()
-            .cookie(new NewCookie("auth", UUID.randomUUID().toString()))
+            .cookie(new NewCookie("auth", authToken), new NewCookie("userId", found_user.getId().toString()))
+            .build();
+    }
+
+    @POST
+    @Path("/bookings")
+    public Response createBooking(
+        @CookieParam("userId") Cookie userId,
+        @CookieParam("auth") Cookie authCookie,
+        BookingRequest bReq) {
+        if (authCookie == null) {
+            return Response
+                .status(401)
+                .build();
+        }
+        try {
+            em.getTransaction().begin();
+            TypedQuery<Concert> concertQuery = em.createQuery("SELECT c FROM Concert c WHERE c.id = '" + bReq.getConcertId() + "'", Concert.class);
+            Concert found_concert = concertQuery.getSingleResult();  
+            if (!found_concert.getDates().contains(bReq.getDate())) {
+               throw new NotFoundException("Concert not found");
+            }
+        }
+        catch (Exception e){
+            em.getTransaction().commit(); 
+            em.close();
+            return Response
+                .status(400)
+                .build();
+        }
+
+        List<Seat> bookedList = new ArrayList<Seat>(); 
+        List<Seat> toBook = new ArrayList<Seat>();
+        for (String s : bReq.getSeatLabels()) {
+            TypedQuery<Seat> bookedQuery = em.createQuery("SELECT s FROM Seat s WHERE s.label = '" + s + "' AND s.date = '" + bReq.getDate() + "' AND s.isBooked = 'true'", Seat.class);
+            bookedList.addAll(bookedQuery.getResultList()); 
+            TypedQuery<Seat> freeQuery = em.createQuery("SELECT s FROM Seat s WHERE s.label = '" + s + "' AND s.date = '" + bReq.getDate() + "' AND s.isBooked = 'false'", Seat.class);
+            toBook.addAll(freeQuery.getResultList());
+        }
+
+        if (!bookedList.isEmpty()) {
+            return Response
+                .status(403)
+                .build();
+        }
+
+        for (Seat s : toBook) {
+            s.setIsBooked(true);
+        }
+
+
+        TypedQuery<User> userQuery = em.createQuery("SELECT u FROM User u WHERE u.id = '" + userId.getValue() + "'", User.class);
+        User user = userQuery.getSingleResult();
+        
+        Booking newBooking = new Booking(bReq.getConcertId(), bReq.getDate(), toBook, Long.valueOf(userId.getValue()));
+        em.persist(newBooking);
+
+        em.getTransaction().commit(); 
+        em.close();
+
+        return Response
+            .status(201)
+            .header("location", "http://localhost:10000/services/concert-service/bookings/" + newBooking.getId())
+            .build();
+    }
+
+    @GET
+    @Path("/bookings")
+    public Response getAllBookingsForUser(
+        @CookieParam("userId") Cookie userId,
+        @CookieParam("auth") Cookie authCookie) {
+        if (authCookie == null) {
+            return Response
+                .status(401)
+                .build();
+        }
+        em.getTransaction().begin();
+        TypedQuery<Booking> bookingQuery = em.createQuery("SELECT b FROM Booking b WHERE b.userId = '" + userId.getValue() + "'", Booking.class);
+        List<Booking> bookingList = bookingQuery.getResultList();
+        em.getTransaction().commit();
+        em.close();
+
+        return Response
+            .ok(bookingList)
+            .build();
+    }
+
+    @GET
+    @Path("/bookings/{id}")
+    public Response getBookingById(
+        @CookieParam("userId") Cookie userId,
+        @PathParam("id") Long id) {
+
+        Booking booking = null;
+        try {
+            em.getTransaction().begin();
+            TypedQuery<Booking> bookingQuery = em.createQuery("SELECT b FROM Booking b WHERE b.id = '" + id + "'", Booking.class);
+            booking = bookingQuery.getSingleResult();
+        }
+        catch (Exception e) {
+            return Response
+                .status(404)
+                .build();
+        }
+        finally {
+            em.getTransaction().commit();
+            em.close();
+        }
+
+        
+        if (!booking.getUserId().toString().equals(userId.getValue())) {
+            return Response
+                .status(403)
+                .build();            
+        }
+        else {
+            return Response
+                .ok(booking)
+                .build();   
+        }
+
+    }
+
+    @GET
+    @Path("/seats/{date}") 
+    public Response getSeatByDate(
+        @PathParam("date") LocalDateTimeParam dateParam,
+        @QueryParam("status") String status
+    ) {
+        Map bookedStatus =  Map.of("Unbooked", false, "Booked", true, "Any", "%");
+        
+        em.getTransaction().begin();
+        TypedQuery<Seat> seatQuery = em.createQuery("SELECT s FROM Seat s WHERE s.date = '" + dateParam.getLocalDateTime() + "' AND s.isBooked LIKE '" + bookedStatus.get(status) + "'", Seat.class);
+        List<Seat> seatList = seatQuery.getResultList();
+        em.getTransaction().commit(); 
+        em.close();
+        
+        return Response
+            .ok(seatList)
             .build();
     }
 
