@@ -190,9 +190,6 @@ public class ConcertResource {
             bookedList.addAll(bookedQuery.getResultList());
             TypedQuery<Seat> freeQuery = em.createQuery("SELECT s FROM Seat s WHERE s.label = '" + s + "' AND s.date = '" + bReq.getDate() + "' AND s.isBooked = false", Seat.class);
             toBook.addAll(freeQuery.getResultList());
-            for (Seat ss : toBook) {
-            LOGGER.debug(ss.getLabel());
-            }
         }
 
         if (!bookedList.isEmpty()) {
@@ -202,8 +199,8 @@ public class ConcertResource {
         }
 
         for (Seat s : toBook) {
-            em.merge(s);
             s.setIsBooked(true);
+            em.merge(s);
         }
 
 
@@ -346,19 +343,12 @@ public class ConcertResource {
         // Input validated, subscribe user
 
         Long concertId = concertSubInfo.getConcertId();
-        LOGGER.warn("SUBSCRIBING USER WITH CID: " + concertId + " DATE: " + concertSubInfo.getDate());
 
         concertSubscriptons.putIfAbsent(concertId, new ArrayList<>());
         concertSubscriptons.get(concertId).add(new ConcertSubscription(sub, concertSubInfo));
-        LOGGER.warn("SUBSCRIPTIONS AFTER SUB LENGTH: " + concertSubscriptons.size());
     }
 
     private void processConcertNotification(Long concertId, LocalDateTime date) {
-
-
-
-        LOGGER.warn("BOOKING WITH CONCERT ID: " + concertId + " DATE: " + date);
-        LOGGER.warn("SUBSCRIPTIONS LENGTH: " + concertSubscriptons.size());
 
         ArrayList<ConcertSubscription> concertSubs = concertSubscriptons.get(concertId);
 
@@ -370,23 +360,15 @@ public class ConcertResource {
 
         for (ConcertSubscription sub : concertSubs) {
 
-            LOGGER.warn("INSIDE THE FOR LOOP, CID: " + sub.concertSubscription.getConcertId() + " DATE: " + sub.concertSubscription.getDate());
 
             if (sub.concertSubscription.getDate().equals(date)) {
 
 
-                int numBookedSeats = em.createQuery(
-                        "SELECT b FROM Booking b WHERE b.concertId = '" + concertId + "' AND b.date = '" +
-                                sub.concertSubscription.getDate() + "'", Booking.class
-                ).getResultList().size();
+                int numBookedSeats = em.createQuery("SELECT s FROM Seat s WHERE s.isBooked = 'false'", Seat.class).getResultList().size();
 
                 int numSeatsRemaining = 120 - numBookedSeats;
 
-                LOGGER.warn("SEATS REMAINING " + numSeatsRemaining);
-
                 double percentageBooked = (numBookedSeats / (double) 120) * 100;
-
-                LOGGER.warn("PERCENTAGE BOOKED: " + percentageBooked);
 
                 if (percentageBooked > sub.concertSubscription.getPercentageBooked()) {
                     sub.response.resume(Response.ok(new ConcertInfoNotificationDTO(numSeatsRemaining)).build());
