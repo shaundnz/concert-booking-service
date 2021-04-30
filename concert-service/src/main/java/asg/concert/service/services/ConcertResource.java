@@ -364,7 +364,7 @@ public class ConcertResource {
             if (sub.concertSubscription.getDate().equals(date)) {
 
 
-                int numBookedSeats = em.createQuery("SELECT s FROM Seat s WHERE s.isBooked = 'false'", Seat.class).getResultList().size();
+                int numBookedSeats = em.createQuery("SELECT s FROM Seat s WHERE s.isBooked = 'true'", Seat.class).getResultList().size();
 
                 int numSeatsRemaining = 120 - numBookedSeats;
 
