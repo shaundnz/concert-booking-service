@@ -29,8 +29,6 @@ public class Concert implements Comparable<Concert> {
         @Column(name="BLURB", length = 1000)
         private String blurb;
         
-        @JsonSerialize(contentUsing = LocalDateTimeSerializer.class)
-        @JsonDeserialize(contentUsing = LocalDateTimeDeserializer.class)   
         @ElementCollection(fetch = FetchType.EAGER)
         @CollectionTable(
             name = "CONCERT_DATES",

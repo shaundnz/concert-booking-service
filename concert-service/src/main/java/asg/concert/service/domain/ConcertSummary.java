@@ -1,6 +1,7 @@
 package asg.concert.service.domain;
 
 public class ConcertSummary {
+    
     private Long id;
     private String title;
     private String imageName;

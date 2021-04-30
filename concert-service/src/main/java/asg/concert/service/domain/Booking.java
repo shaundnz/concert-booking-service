@@ -17,16 +17,12 @@ import asg.concert.common.jackson.LocalDateTimeSerializer;
 @Table(name = "Bookings")
 public class Booking {
 
-    @JsonIgnore
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @JsonIgnore
     private Long userId;
     private Long concertId;
 
-    @JsonSerialize(using = LocalDateTimeSerializer.class)
-    @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     private LocalDateTime date;
     @OneToMany(fetch = FetchType.EAGER)
     @JoinColumn(name = "BOOKING_ID", referencedColumnName = "id")

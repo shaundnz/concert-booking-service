@@ -12,8 +12,8 @@ import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.*;
 
-import asg.concert.common.dto.ConcertInfoNotificationDTO;
-import asg.concert.common.dto.ConcertInfoSubscriptionDTO;
+import asg.concert.common.dto.*;
+import asg.concert.service.mapper.*;
 import asg.concert.service.jaxrs.ConcertSubscription;
 import org.hibernate.annotations.NotFound;
 import org.slf4j.Logger;
@@ -46,7 +46,7 @@ public class ConcertResource {
         em.close();
         if (concert != null) {
             return Response
-                    .ok(concert)
+                    .ok(ConcertMapper.concertDTO(concert))
                     .build();
         } else {
             return Response
@@ -64,8 +64,13 @@ public class ConcertResource {
         em.getTransaction().commit();
         em.close();
 
+        List<ConcertDTO> entity = new ArrayList<ConcertDTO>();
+        for (Concert c : concertList) {
+            entity.add(ConcertMapper.concertDTO(c));
+        }
+        
         return Response
-                .ok(concertList)
+                .ok(entity)
                 .build();
     }
 
@@ -77,8 +82,14 @@ public class ConcertResource {
         List<ConcertSummary> concertList = concertQuery.getResultList();
         em.getTransaction().commit();
         em.close();
+        
+        List<ConcertSummaryDTO> entity = new ArrayList<ConcertSummaryDTO>();
+        for (ConcertSummary cs : concertList) {
+            entity.add(ConcertSummaryMapper.concertSummaryDTO(cs));
+        }
+
         return Response
-                .ok(concertList)
+                .ok(entity)
                 .build();
     }
 
@@ -92,7 +103,7 @@ public class ConcertResource {
         em.close();
         if (performer != null) {
             return Response
-                    .ok(performer)
+                    .ok(PerformerMapper.performerDTO(performer))
                     .build();
         } else {
             return Response
@@ -109,14 +120,20 @@ public class ConcertResource {
         List<Performer> performerList = performerQuery.getResultList();
         em.getTransaction().commit();
         em.close();
+
+        List<PerformerDTO> entity = new ArrayList<PerformerDTO>();
+        for (Performer p : performerList) {
+            entity.add(PerformerMapper.performerDTO(p));
+        }
+
         return Response
-                .ok(performerList)
+                .ok(entity)
                 .build();
     }
 
     @POST
     @Path("/login")
-    public Response attemptLogin(User user) {
+    public Response attemptLogin(UserDTO user) {
         User found_user = null;
         try {
             em.getTransaction().begin();
@@ -145,7 +162,7 @@ public class ConcertResource {
     public Response createBooking(
             @CookieParam("userId") Cookie userId,
             @CookieParam("auth") Cookie authCookie,
-            BookingRequest bReq) {
+            BookingRequestDTO bReq) {
         if (authCookie == null) {
             return Response
                     .status(401)
@@ -173,6 +190,9 @@ public class ConcertResource {
             bookedList.addAll(bookedQuery.getResultList());
             TypedQuery<Seat> freeQuery = em.createQuery("SELECT s FROM Seat s WHERE s.label = '" + s + "' AND s.date = '" + bReq.getDate() + "' AND s.isBooked = false", Seat.class);
             toBook.addAll(freeQuery.getResultList());
+            for (Seat ss : toBook) {
+            LOGGER.debug(ss.getLabel());
+            }
         }
 
         if (!bookedList.isEmpty()) {
@@ -182,6 +202,7 @@ public class ConcertResource {
         }
 
         for (Seat s : toBook) {
+            em.merge(s);
             s.setIsBooked(true);
         }
 
@@ -220,8 +241,13 @@ public class ConcertResource {
         em.getTransaction().commit();
         em.close();
 
+        List<BookingDTO> entity = new ArrayList<BookingDTO>();
+        for (Booking b : bookingList) {
+            entity.add(BookingMapper.bookingDTO(b));
+        }
+
         return Response
-                .ok(bookingList)
+                .ok(entity)
                 .build();
     }
 
@@ -250,9 +276,11 @@ public class ConcertResource {
             return Response
                     .status(403)
                     .build();
-        } else {
+        } 
+
+        else {
             return Response
-                    .ok(booking)
+                    .ok(BookingMapper.bookingDTO(booking))
                     .build();
         }
 
@@ -272,8 +300,13 @@ public class ConcertResource {
         em.getTransaction().commit();
         em.close();
 
+        List<SeatDTO> entity = new ArrayList<SeatDTO>();
+        for (Seat s : seatList) {
+            entity.add(SeatMapper.seatDTO(s));
+        }
+
         return Response
-                .ok(seatList)
+                .ok(entity)
                 .build();
     }
 
@@ -282,8 +315,7 @@ public class ConcertResource {
     public void subscribeToConcert(
             ConcertInfoSubscriptionDTO concertSubInfo,
             @CookieParam("auth") Cookie authCookie,
-            @Suspended AsyncResponse sub
-    ) {
+            @Suspended AsyncResponse sub) {
         // Unauthorized users prevented from subscribing, return 401
         if (authCookie == null) {
             sub.resume(Response

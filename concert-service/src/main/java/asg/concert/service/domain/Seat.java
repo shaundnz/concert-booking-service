@@ -24,12 +24,9 @@ public class Seat {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
 	private String label;
-	@JsonIgnore
+
 	private boolean isBooked;
 	
-	@JsonIgnore
-	//@JsonSerialize(using = LocalDateTimeSerializer.class)
-    //@JsonDeserialize(using = LocalDateTimeDeserializer.class)
 	private LocalDateTime date;
 	private BigDecimal price;
 	

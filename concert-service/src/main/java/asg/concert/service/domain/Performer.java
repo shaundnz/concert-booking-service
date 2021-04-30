@@ -31,9 +31,8 @@ public class Performer {
         @Column(name="BLURB", length = 1000)
         private String blurb;
 
-        @JsonIgnore
-        @ManyToMany(mappedBy = "performers", targetEntity = Concert.class, fetch = FetchType.EAGER)
-        private Set<Concert> concerts = new HashSet<>();
+        // @ManyToMany(mappedBy = "performers", targetEntity = Concert.class, fetch = FetchType.EAGER)
+        // private Set<Concert> concerts = new HashSet<>();
 
         public Performer() { }
     
@@ -120,11 +119,11 @@ public class Performer {
         this.blurb = blurb;
     }
 
-    public Set<Concert> getConcerts() {
-        return concerts;
-    }
+    // public Set<Concert> getConcerts() {
+    //     return concerts;
+    // }
 
-    public void setConcerts(Set<Concert> concerts) {
-        this.concerts = concerts;
-    }
+    // public void setConcerts(Set<Concert> concerts) {
+    //     this.concerts = concerts;
+    // }
 }
