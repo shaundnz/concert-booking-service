@@ -6,14 +6,9 @@ import java.util.Set;
 
 import javax.persistence.*;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import asg.concert.common.jackson.LocalDateTimeDeserializer;
-import asg.concert.common.jackson.LocalDateTimeSerializer;
 
 @Entity
 @Table(name = "Concerts")

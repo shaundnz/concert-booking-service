@@ -5,11 +5,6 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import javax.persistence.*;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import java.util.HashSet;
-import java.util.Set;
-
 import asg.concert.common.types.Genre;
 
 @Entity

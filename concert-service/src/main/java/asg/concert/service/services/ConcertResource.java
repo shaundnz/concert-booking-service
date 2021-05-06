@@ -1,11 +1,9 @@
 package asg.concert.service.services;
 
-import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.annotation.security.RolesAllowed;
 import javax.persistence.*;
 import javax.ws.rs.*;
 import javax.ws.rs.container.AsyncResponse;
@@ -15,7 +13,6 @@ import javax.ws.rs.core.*;
 import asg.concert.common.dto.*;
 import asg.concert.service.mapper.*;
 import asg.concert.service.jaxrs.ConcertSubscription;
-import org.hibernate.annotations.NotFound;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -205,7 +202,7 @@ public class ConcertResource {
 
 
         TypedQuery<User> userQuery = em.createQuery("SELECT u FROM User u WHERE u.id = :id", User.class);
-        User user = userQuery.setParameter("id", userId.getValue()).getSingleResult();
+        User user = userQuery.setParameter("id", Long.parseLong(userId.getValue())).getSingleResult();
 
         Booking newBooking = new Booking(bReq.getConcertId(), bReq.getDate(), toBook, Long.valueOf(userId.getValue()));
         em.persist(newBooking);
@@ -234,7 +231,7 @@ public class ConcertResource {
         }
         em.getTransaction().begin();
         TypedQuery<Booking> bookingQuery = em.createQuery("SELECT b FROM Booking b WHERE b.userId = :id", Booking.class);
-        List<Booking> bookingList = bookingQuery.setParameter("id", userId.getValue()).getResultList();
+        List<Booking> bookingList = bookingQuery.setParameter("id", Long.parseLong(userId.getValue())).getResultList();
         em.getTransaction().commit();
         em.close();
 
@@ -258,7 +255,7 @@ public class ConcertResource {
         try {
             em.getTransaction().begin();
             TypedQuery<Booking> bookingQuery = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
-            booking = bookingQuery.setParameter("id", userId.getValue()).getSingleResult();
+            booking = bookingQuery.setParameter("id", id).getSingleResult();
         } catch (Exception e) {
             return Response
                     .status(404)
@@ -289,11 +286,27 @@ public class ConcertResource {
             @PathParam("date") LocalDateTimeParam dateParam,
             @QueryParam("status") String status
     ) {
-        Map bookedStatus = Map.of("Unbooked", false, "Booked", true, "Any", "%");
 
         em.getTransaction().begin();
-        TypedQuery<Seat> seatQuery = em.createQuery("SELECT s FROM Seat s WHERE s.date = :date AND s.isBooked LIKE :status", Seat.class);
-        List<Seat> seatList = seatQuery.setParameter("date", dateParam.getLocalDateTime()).setParameter("status", bookedStatus.get(status)).getResultList();
+        TypedQuery<Seat> seatQuery = null;
+        switch (status) {
+            case ("Unbooked") : {
+                seatQuery = em.createQuery("SELECT s FROM Seat s WHERE s.date = :date AND s.isBooked = 'false'", Seat.class);
+                break;
+            }
+
+            case ("Booked") : {
+                seatQuery = em.createQuery("SELECT s FROM Seat s WHERE s.date = :date AND s.isBooked = 'true'", Seat.class);
+                break;
+            }
+
+            case ("Any") : {
+                seatQuery = em.createQuery("SELECT s FROM Seat s WHERE s.date = :date", Seat.class);
+                break;
+            }
+        }
+        
+        List<Seat> seatList = seatQuery.setParameter("date", dateParam.getLocalDateTime()).getResultList();
         em.getTransaction().commit();
         em.close();
 

@@ -6,13 +6,6 @@ import java.util.List;
 
 import javax.persistence.*;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import asg.concert.common.jackson.LocalDateTimeDeserializer;
-import asg.concert.common.jackson.LocalDateTimeSerializer;
-
 @Entity
 @Table(name = "Bookings")
 public class Booking {

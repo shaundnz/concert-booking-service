@@ -2,19 +2,12 @@ package asg.concert.service.domain;
 
 import javax.persistence.*;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import asg.concert.common.jackson.LocalDateTimeDeserializer;
-import asg.concert.common.jackson.LocalDateTimeSerializer;
 
 @Entity
 @Table(name="Seats")

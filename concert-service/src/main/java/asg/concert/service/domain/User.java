@@ -1,7 +1,5 @@
 package asg.concert.service.domain;
 
-import java.util.UUID;
-
 import javax.persistence.*;
 
 @Entity
