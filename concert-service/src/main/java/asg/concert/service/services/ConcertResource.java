@@ -1,5 +1,7 @@
 package asg.concert.service.services;
 
+import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,6 +21,8 @@ import org.slf4j.LoggerFactory;
 import asg.concert.service.domain.*;
 import asg.concert.service.jaxrs.LocalDateTimeParam;
 
+import java.security.MessageDigest;
+
 @Produces({
         MediaType.APPLICATION_JSON,
 })
@@ -31,7 +35,9 @@ public class ConcertResource {
     private static Logger LOGGER = LoggerFactory.getLogger(ConcertResource.class);
     private EntityManager em = PersistenceManager.instance().createEntityManager();
 
-    private static final ConcurrentHashMap<Long, ArrayList<ConcertSubscription>> concertSubscriptons = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Long, ArrayList<ConcertSubscription>> concertSubscriptions = new ConcurrentHashMap<>();
+    private static final String AUTH_COOKIE = "auth";
+    private static final String SECRET = "OJ2eAg4Rag8qH8Imiwn0";
 
     @GET
     @Path("/concerts/{id}")
@@ -143,24 +149,21 @@ public class ConcertResource {
                     .status(401)
                     .build();
         }
-        String authToken = UUID.randomUUID().toString();
-        found_user.setAuthToken(authToken);
-        em.merge(found_user);
+        NewCookie signedCookie = createSignedCookie(found_user.getId().toString());
         em.getTransaction().commit();
         em.close();
         return Response
                 .ok()
-                .cookie(new NewCookie("auth", authToken), new NewCookie("userId", found_user.getId().toString()))
+                .cookie(signedCookie)
                 .build();
     }
 
     @POST
     @Path("/bookings")
     public Response createBooking(
-            @CookieParam("userId") Cookie userId,
             @CookieParam("auth") Cookie authCookie,
             BookingRequestDTO bReq) {
-        if (authCookie == null) {
+        if (!isUserAuthenticated(authCookie)) {
             return Response
                     .status(401)
                     .build();
@@ -202,9 +205,9 @@ public class ConcertResource {
 
 
         TypedQuery<User> userQuery = em.createQuery("SELECT u FROM User u WHERE u.id = :id", User.class);
-        User user = userQuery.setParameter("id", Long.parseLong(userId.getValue())).getSingleResult();
+        User user = userQuery.setParameter("id", Long.parseLong(getUserId(authCookie))).getSingleResult();
 
-        Booking newBooking = new Booking(bReq.getConcertId(), bReq.getDate(), toBook, Long.valueOf(userId.getValue()));
+        Booking newBooking = new Booking(bReq.getConcertId(), bReq.getDate(), toBook, Long.valueOf(getUserId(authCookie)));
         em.persist(newBooking);
 
         em.getTransaction().commit();
@@ -222,16 +225,15 @@ public class ConcertResource {
     @GET
     @Path("/bookings")
     public Response getAllBookingsForUser(
-            @CookieParam("userId") Cookie userId,
             @CookieParam("auth") Cookie authCookie) {
-        if (authCookie == null) {
+        if (!isUserAuthenticated(authCookie)) {
             return Response
                     .status(401)
                     .build();
         }
         em.getTransaction().begin();
         TypedQuery<Booking> bookingQuery = em.createQuery("SELECT b FROM Booking b WHERE b.userId = :id", Booking.class);
-        List<Booking> bookingList = bookingQuery.setParameter("id", Long.parseLong(userId.getValue())).getResultList();
+        List<Booking> bookingList = bookingQuery.setParameter("id", Long.parseLong(getUserId(authCookie))).getResultList();
         em.getTransaction().commit();
         em.close();
 
@@ -248,7 +250,7 @@ public class ConcertResource {
     @GET
     @Path("/bookings/{id}")
     public Response getBookingById(
-            @CookieParam("userId") Cookie userId,
+            @CookieParam("auth") Cookie authCookie,
             @PathParam("id") Long id) {
 
         Booking booking = null;
@@ -266,7 +268,7 @@ public class ConcertResource {
         }
 
 
-        if (!booking.getUserId().toString().equals(userId.getValue())) {
+        if (!booking.getUserId().toString().equals(getUserId(authCookie))) {
             return Response
                     .status(403)
                     .build();
@@ -327,7 +329,7 @@ public class ConcertResource {
             @CookieParam("auth") Cookie authCookie,
             @Suspended AsyncResponse sub) {
         // Unauthorized users prevented from subscribing, return 401
-        if (authCookie == null) {
+        if (!isUserAuthenticated(authCookie)) {
             sub.resume(Response
                     .status(401)
                     .build());
@@ -357,13 +359,13 @@ public class ConcertResource {
 
         Long concertId = concertSubInfo.getConcertId();
 
-        concertSubscriptons.putIfAbsent(concertId, new ArrayList<>());
-        concertSubscriptons.get(concertId).add(new ConcertSubscription(sub, concertSubInfo));
+        concertSubscriptions.putIfAbsent(concertId, new ArrayList<>());
+        concertSubscriptions.get(concertId).add(new ConcertSubscription(sub, concertSubInfo));
     }
 
     private void processConcertNotification(Long concertId, LocalDateTime date) {
 
-        ArrayList<ConcertSubscription> concertSubs = concertSubscriptons.get(concertId);
+        ArrayList<ConcertSubscription> concertSubs = concertSubscriptions.get(concertId);
 
         if (concertSubs == null) {
             return;
@@ -391,6 +393,57 @@ public class ConcertResource {
         em.getTransaction().commit();
     }
 
+
+    private NewCookie createSignedCookie(String userID) {
+        try {
+            String userHash = generateUserHash(userID);
+            return new NewCookie(AUTH_COOKIE, userID + "|" + userHash);
+        } catch (NoSuchAlgorithmException e){
+            return null;
+        }
+    }
+
+    private boolean isUserAuthenticated(Cookie authCookie) {
+        if (authCookie == null) {
+            return false;
+        }
+        String[] cookieParts = authCookie.getValue().split("\\|");
+        String userID = cookieParts[0];
+        String userSecret = cookieParts[1];
+
+        try {
+            String expectedSecret = generateUserHash(userID);
+            return userSecret.equals(expectedSecret);
+        } catch (NoSuchAlgorithmException e) {
+            return false;
+        }
+    }
+
+    private String getUserId(Cookie authCookie) {
+        if (authCookie == null) {
+            return null;
+        }
+        String[] cookieParts = authCookie.getValue().split("\\|");
+        return cookieParts[0];
+    }
+
+    private String generateUserHash(String userID) throws NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        String userString = userID + SECRET;
+        byte[] userHash = digest.digest(userString.getBytes(StandardCharsets.UTF_8));
+
+        StringBuffer hexString = new StringBuffer();
+
+        for (int i= 0; i < userHash.length; i ++) {
+            String hex = Integer.toHexString(0xFF & userHash[i]);
+            if (hex.length() == 1) {
+                hexString.append("0");
+            }
+            hexString.append(hex);
+        }
+
+        return hexString.toString();
+    }
 }
 
 
