@@ -137,8 +137,8 @@ public class ConcertResource {
         User found_user = null;
         try {
             em.getTransaction().begin();
-            TypedQuery<User> userQuery = em.createQuery("SELECT u FROM User u WHERE u.username = '" + user.getUsername() + "' AND u.password = '" + user.getPassword() + "'", User.class);
-            found_user = userQuery.getSingleResult();
+            TypedQuery<User> userQuery = em.createQuery("SELECT u FROM User u WHERE u.username = :username AND u.password = :password", User.class);
+            found_user = userQuery.setParameter("username", user.getUsername()).setParameter("password", user.getPassword()).getSingleResult();
         } catch (Exception e) {
             em.getTransaction().commit();
             em.close();
@@ -170,8 +170,8 @@ public class ConcertResource {
         }
         try {
             em.getTransaction().begin();
-            TypedQuery<Concert> concertQuery = em.createQuery("SELECT c FROM Concert c WHERE c.id = '" + bReq.getConcertId() + "'", Concert.class);
-            Concert found_concert = concertQuery.getSingleResult();
+            TypedQuery<Concert> concertQuery = em.createQuery("SELECT c FROM Concert c WHERE c.id = :id", Concert.class);
+            Concert found_concert = concertQuery.setParameter("id", bReq.getConcertId()).getSingleResult();
             if (!found_concert.getDates().contains(bReq.getDate())) {
                 throw new NotFoundException("Concert not found");
             }
@@ -186,10 +186,10 @@ public class ConcertResource {
         List<Seat> bookedList = new ArrayList<Seat>();
         List<Seat> toBook = new ArrayList<Seat>();
         for (String s : bReq.getSeatLabels()) {
-            TypedQuery<Seat> bookedQuery = em.createQuery("SELECT s FROM Seat s WHERE s.label = '" + s + "' AND s.date = '" + bReq.getDate() + "' AND s.isBooked = true", Seat.class);
-            bookedList.addAll(bookedQuery.getResultList());
-            TypedQuery<Seat> freeQuery = em.createQuery("SELECT s FROM Seat s WHERE s.label = '" + s + "' AND s.date = '" + bReq.getDate() + "' AND s.isBooked = false", Seat.class);
-            toBook.addAll(freeQuery.getResultList());
+            TypedQuery<Seat> bookedQuery = em.createQuery("SELECT s FROM Seat s WHERE s.label = :label AND s.date = :date AND s.isBooked = true", Seat.class);
+            bookedList.addAll(bookedQuery.setParameter("label", s).setParameter("date", bReq.getDate()).getResultList());
+            TypedQuery<Seat> freeQuery = em.createQuery("SELECT s FROM Seat s WHERE s.label = :label AND s.date = :date AND s.isBooked = false", Seat.class);
+            toBook.addAll(freeQuery.setParameter("label", s).setParameter("date", bReq.getDate()).getResultList());
         }
 
         if (!bookedList.isEmpty()) {
@@ -204,8 +204,8 @@ public class ConcertResource {
         }
 
 
-        TypedQuery<User> userQuery = em.createQuery("SELECT u FROM User u WHERE u.id = '" + userId.getValue() + "'", User.class);
-        User user = userQuery.getSingleResult();
+        TypedQuery<User> userQuery = em.createQuery("SELECT u FROM User u WHERE u.id = :id", User.class);
+        User user = userQuery.setParameter("id", userId.getValue()).getSingleResult();
 
         Booking newBooking = new Booking(bReq.getConcertId(), bReq.getDate(), toBook, Long.valueOf(userId.getValue()));
         em.persist(newBooking);
@@ -233,8 +233,8 @@ public class ConcertResource {
                     .build();
         }
         em.getTransaction().begin();
-        TypedQuery<Booking> bookingQuery = em.createQuery("SELECT b FROM Booking b WHERE b.userId = '" + userId.getValue() + "'", Booking.class);
-        List<Booking> bookingList = bookingQuery.getResultList();
+        TypedQuery<Booking> bookingQuery = em.createQuery("SELECT b FROM Booking b WHERE b.userId = :id", Booking.class);
+        List<Booking> bookingList = bookingQuery.setParameter("id", userId.getValue()).getResultList();
         em.getTransaction().commit();
         em.close();
 
@@ -257,8 +257,8 @@ public class ConcertResource {
         Booking booking = null;
         try {
             em.getTransaction().begin();
-            TypedQuery<Booking> bookingQuery = em.createQuery("SELECT b FROM Booking b WHERE b.id = '" + id + "'", Booking.class);
-            booking = bookingQuery.getSingleResult();
+            TypedQuery<Booking> bookingQuery = em.createQuery("SELECT b FROM Booking b WHERE b.id = :id", Booking.class);
+            booking = bookingQuery.setParameter("id", userId.getValue()).getSingleResult();
         } catch (Exception e) {
             return Response
                     .status(404)
@@ -292,8 +292,8 @@ public class ConcertResource {
         Map bookedStatus = Map.of("Unbooked", false, "Booked", true, "Any", "%");
 
         em.getTransaction().begin();
-        TypedQuery<Seat> seatQuery = em.createQuery("SELECT s FROM Seat s WHERE s.date = '" + dateParam.getLocalDateTime() + "' AND s.isBooked LIKE '" + bookedStatus.get(status) + "'", Seat.class);
-        List<Seat> seatList = seatQuery.getResultList();
+        TypedQuery<Seat> seatQuery = em.createQuery("SELECT s FROM Seat s WHERE s.date = :date AND s.isBooked LIKE :status", Seat.class);
+        List<Seat> seatList = seatQuery.setParameter("date", dateParam.getLocalDateTime()).setParameter("status", bookedStatus.get(status)).getResultList();
         em.getTransaction().commit();
         em.close();
 
