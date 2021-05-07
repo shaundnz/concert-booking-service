@@ -219,7 +219,7 @@ public class ConcertResource {
      * Creates endpoint for booking at /bookings/{id}
      *
      * Cookies:
-     *  auth: Signed cookie containing current logged in user id and secret
+     *  auth: Signed cookie containing current logged in user id and signature
      *
      * Request Body:
      *  BookingDTO: Contains concert ID, date and list of seats for booking
@@ -297,7 +297,7 @@ public class ConcertResource {
      * For an authenticated user, get all bookings made by the user
      *
      * Cookies:
-     *  auth: Signed cookie containing current logged in user id and secret
+     *  auth: Signed cookie containing current logged in user id and signature
      *
      * Responses:
      *  200: Response contains all booking information made by user
@@ -336,7 +336,7 @@ public class ConcertResource {
      *  id: The id of the booking to be retrieved
      *
      * Cookies:
-     *  auth: Signed cookie containing current logged in user id and secret
+     *  auth: Signed cookie containing current logged in user id and signature
      *
      * Responses:
      *  200: Booking with id, made by user returned
@@ -439,7 +439,7 @@ public class ConcertResource {
      * specified concert passes the specified threshold
      *
      * Cookies:
-     *  auth: Signed cookie containing current logged in user id and secret
+     *  auth: Signed cookie containing current logged in user id and signature
      *
      * Request Body:
      *  ConcertInfoSubscriptionDTO: Contains concert ID, date, and percentage that user will be notified if booked seats
