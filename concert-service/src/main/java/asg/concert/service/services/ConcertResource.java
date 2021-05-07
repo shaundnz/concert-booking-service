@@ -39,6 +39,17 @@ public class ConcertResource {
     private static final String AUTH_COOKIE = "auth";
     private static final String SECRET = "OJ2eAg4Rag8qH8Imiwn0";
 
+    /**
+     * GET /concerts/{id}
+     * Get concert with specified ID
+     *
+     * Path Parameters:
+     *  id: The ID of the concert to be retrieved
+     *
+     * Responses:
+     *  200: Concert with ID returned
+     *  404: Concert with specified ID does not exist
+     */
     @GET
     @Path("/concerts/{id}")
     public Response getSingleConcert(
@@ -58,6 +69,13 @@ public class ConcertResource {
         }
     }
 
+    /**
+     * GET /concerts
+     * Get all concerts in the database
+     *
+     * Responses:
+     *  200: Return all concerts
+     */
     @GET
     @Path("/concerts")
     public Response getAllConcerts() {
@@ -77,6 +95,13 @@ public class ConcertResource {
                 .build();
     }
 
+    /**
+     * GET /concerts/summaries
+     * Get summaries for all concerts, a concert summary includes only id, title and image name
+     *
+     * Responses:
+     *  200: Return summaries for all concerts
+     */
     @GET
     @Path("/concerts/summaries")
     public Response getConcertSummaries() {
@@ -96,6 +121,17 @@ public class ConcertResource {
                 .build();
     }
 
+    /**
+     * GET /performers/{id}
+     * Get performer with specified ID
+     *
+     * Path Parameters:
+     *  id: The ID of the performer to be retrieved
+     *
+     * Responses:
+     *  200: Performer with ID returned
+     *  404: Performer with specified ID does not exist
+     */
     @GET
     @Path("/performers/{id}")
     public Response getSinglePerformer(
@@ -115,6 +151,13 @@ public class ConcertResource {
         }
     }
 
+    /**
+     * GET /performers
+     * Get all performers in the database
+     *
+     * Responses:
+     *  200: Return all performers
+     */
     @GET
     @Path("/performers")
     public Response getAllPerformers() {
@@ -134,6 +177,18 @@ public class ConcertResource {
                 .build();
     }
 
+    /**
+     * POST /login
+     * Login user to the concert booking system, creates a signed cookie named auth if successful that a user
+     * can send with future requests to authenticate themselves
+     *
+     * Request Body:
+     *  UserDTO: Contains username and password
+     *
+     * Responses:
+     *  200: Login successful, signed cookie for user generated and returned with response
+     *  401: Unauthorized, incorrect credentials supplied
+     */
     @POST
     @Path("/login")
     public Response attemptLogin(UserDTO user) {
@@ -158,6 +213,21 @@ public class ConcertResource {
                 .build();
     }
 
+    /**
+     * POST /bookings
+     * Allow authenticated users to make a booking for a concert on a date. A booking can contain multiple seats.
+     * Creates endpoint for booking at /bookings/{id}
+     *
+     * Cookies:
+     *  auth: Signed cookie containing current logged in user id and secret
+     *
+     * Request Body:
+     *  BookingDTO: Contains concert ID, date and list of seats for booking
+     *
+     * Responses:
+     *  201: Booking successful, create new booking endpoint
+     *  401: Unauthorized user, no booking made
+     */
     @POST
     @Path("/bookings")
     public Response createBooking(
@@ -222,6 +292,17 @@ public class ConcertResource {
                 .build();
     }
 
+    /**
+     * GET /bookings
+     * For an authenticated user, get all bookings made by the user
+     *
+     * Cookies:
+     *  auth: Signed cookie containing current logged in user id and secret
+     *
+     * Responses:
+     *  200: Response contains all booking information made by user
+     *  401: Unauthenticated user, no booking information returned
+     */
     @GET
     @Path("/bookings")
     public Response getAllBookingsForUser(
@@ -247,6 +328,21 @@ public class ConcertResource {
                 .build();
     }
 
+    /**
+     * GET /bookings/{id}
+     * Get booking information for specified ID, only allow if user is authenticated and made the booking
+     *
+     * Path Parameters:
+     *  id: The id of the booking to be retrieved
+     *
+     * Cookies:
+     *  auth: Signed cookie containing current logged in user id and secret
+     *
+     * Responses:
+     *  200: Booking with id, made by user returned
+     *  404: Booking does not exist, client is unauthorized to see booking or client is unauthenticated. 404 returned
+     *       for all cases to prevent client seeing information about the existence of other bookings.
+     */
     @GET
     @Path("/bookings/{id}")
     public Response getBookingById(
@@ -282,6 +378,21 @@ public class ConcertResource {
 
     }
 
+    /**
+     * GET seats/{date}
+     * Get seats for a particular concert on a particular date, by seat status
+     *
+     * Path Parameters:
+     *  date: LocalDateTime of the concert seat information requested
+     *
+     * Query Parameters:
+     *  status: Equal to "Unbooked", "Booked", "Any", represents seat status
+     *
+     * Responses:
+     *  200: Returns seats with specified booking status for concert on date
+     *  404: Invalid date, no concert exists at this time
+     */
+    // #TODO Return 404 (Or 400?) for a date that has no concerts
     @GET
     @Path("/seats/{date}")
     public Response getSeatByDate(
@@ -322,6 +433,22 @@ public class ConcertResource {
                 .build();
     }
 
+    /**
+     * POST /subscribe/concertInfo
+     * Subscribes authenticated user to concert notifications. Get notified when percentage of booked seats for
+     * specified concert passes the specified threshold
+     *
+     * Cookies:
+     *  auth: Signed cookie containing current logged in user id and secret
+     *
+     * Request Body:
+     *  ConcertInfoSubscriptionDTO: Contains concert ID, date, and percentage that user will be notified if booked seats
+     *                              for this concert exceed this percentage
+     *
+     * Responses:
+     *  400: Bad request, at least one of concert ID and date is non existent
+     *  401: Unauthenticated user, user is prevented from subscribing
+     */
     @POST
     @Path("/subscribe/concertInfo")
     public void subscribeToConcert(
@@ -363,6 +490,11 @@ public class ConcertResource {
         concertSubscriptions.get(concertId).add(new ConcertSubscription(sub, concertSubInfo));
     }
 
+    /**
+     * Iterate through subscribers hashmap, if concert ID and date exists and have subscribers, check if percentage
+     * threshold for bookings has been exceeded, if true, resume the response and send notification to subscriber,
+     * else do nothing
+     */
     private void processConcertNotification(Long concertId, LocalDateTime date) {
 
         ArrayList<ConcertSubscription> concertSubs = concertSubscriptions.get(concertId);
@@ -394,6 +526,10 @@ public class ConcertResource {
     }
 
 
+    /**
+     * Create signed cookie for specified user ID, then return this cookie
+     * Cookie value is userID|Signature
+     */
     private NewCookie createSignedCookie(String userID) {
         try {
             String userHash = generateUserHash(userID);
@@ -403,6 +539,10 @@ public class ConcertResource {
         }
     }
 
+    /**
+     * Test if user us authenticated, check for existence of "auth" cookie. If yes then compare cookie signature with
+     * expected signature. If they match, user is authenticated and return true, else return false
+     */
     private boolean isUserAuthenticated(Cookie authCookie) {
         if (authCookie == null) {
             return false;
@@ -419,6 +559,9 @@ public class ConcertResource {
         }
     }
 
+    /**
+     * Extract the user ID from the auth cookie
+     */
     private String getUserId(Cookie authCookie) {
         if (authCookie == null) {
             return null;
@@ -427,6 +570,9 @@ public class ConcertResource {
         return cookieParts[0];
     }
 
+    /**
+     * Combine user ID and server side secret to generate hash for user which is used to sign cookie
+     */
     private String generateUserHash(String userID) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         String userString = userID + SECRET;
