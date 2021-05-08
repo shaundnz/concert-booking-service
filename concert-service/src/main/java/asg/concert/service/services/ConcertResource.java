@@ -106,18 +106,14 @@ public class ConcertResource {
     @Path("/concerts/summaries")
     public Response getConcertSummaries() {
         em.getTransaction().begin();
-        TypedQuery<ConcertSummary> concertQuery = em.createQuery("select new asg.concert.service.domain.ConcertSummary(c.id, c.title, c.imageName) from Concert c", ConcertSummary.class);
-        List<ConcertSummary> concertList = concertQuery.getResultList();
+        TypedQuery<ConcertSummaryDTO> concertQuery = em.createQuery("select new asg.concert.common.dto.ConcertSummaryDTO(c.id, c.title, c.imageName) from Concert c", ConcertSummaryDTO.class);
+        List<ConcertSummaryDTO> concertList = concertQuery.getResultList();
         em.getTransaction().commit();
         em.close();
         
-        List<ConcertSummaryDTO> entity = new ArrayList<ConcertSummaryDTO>();
-        for (ConcertSummary cs : concertList) {
-            entity.add(ConcertSummaryMapper.concertSummaryDTO(cs));
-        }
 
         return Response
-                .ok(entity)
+                .ok(concertList)
                 .build();
     }
 
@@ -197,7 +193,8 @@ public class ConcertResource {
             em.getTransaction().begin();
             TypedQuery<User> userQuery = em.createQuery("SELECT u FROM User u WHERE u.username = :username AND u.password = :password", User.class);
             found_user = userQuery.setParameter("username", user.getUsername()).setParameter("password", user.getPassword()).getSingleResult();
-        } catch (Exception e) {
+        } 
+        catch (Exception e) {
             em.getTransaction().commit();
             em.close();
             return Response
@@ -227,6 +224,7 @@ public class ConcertResource {
      * Responses:
      *  201: Booking successful, create new booking endpoint
      *  401: Unauthorized user, no booking made
+     *  403: Some or all of the seats selected have been booked already.
      */
     @POST
     @Path("/bookings")
@@ -256,17 +254,25 @@ public class ConcertResource {
         List<Seat> bookedList = new ArrayList<Seat>();
         List<Seat> toBook = new ArrayList<Seat>();
         for (String s : bReq.getSeatLabels()) {
+
+            // Lock the queries immediately to avoid double booking
+
             TypedQuery<Seat> bookedQuery = em.createQuery("SELECT s FROM Seat s WHERE s.label = :label AND s.date = :date AND s.isBooked = true", Seat.class);
-            bookedList.addAll(bookedQuery.setParameter("label", s).setParameter("date", bReq.getDate()).getResultList());
+            bookedList.addAll(bookedQuery.setParameter("label", s).setParameter("date", bReq.getDate()).setLockMode(LockModeType.PESSIMISTIC_WRITE).getResultList());
             TypedQuery<Seat> freeQuery = em.createQuery("SELECT s FROM Seat s WHERE s.label = :label AND s.date = :date AND s.isBooked = false", Seat.class);
-            toBook.addAll(freeQuery.setParameter("label", s).setParameter("date", bReq.getDate()).getResultList());
+            toBook.addAll(freeQuery.setParameter("label", s).setParameter("date", bReq.getDate()).setLockMode(LockModeType.PESSIMISTIC_WRITE).getResultList());
+
         }
 
         if (!bookedList.isEmpty()) {
+            em.getTransaction().commit();
+            em.close();
             return Response
                     .status(403)
                     .build();
         }
+
+        
 
         for (Seat s : toBook) {
             s.setIsBooked(true);
@@ -392,7 +398,7 @@ public class ConcertResource {
      *  200: Returns seats with specified booking status for concert on date
      *  404: Invalid date, no concert exists at this time
      */
-    // #TODO Return 404 (Or 400?) for a date that has no concerts
+    
     @GET
     @Path("/seats/{date}")
     public Response getSeatByDate(

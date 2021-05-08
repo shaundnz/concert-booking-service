@@ -12,7 +12,6 @@ public class User {
     private String username;
     private String password;
     private Long version;
-    private String authCookie;
 
     public User (Long id, String username, String password, Long version) {
         this.id = id;
@@ -57,11 +56,4 @@ public class User {
         this.version = version;
     }
 
-    public String getAuthToken() {
-        return authCookie;
-    }
-
-    public void setAuthToken(String authCookie) {
-        this.authCookie = authCookie;
-    }
 }
