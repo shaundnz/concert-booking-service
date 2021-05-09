@@ -286,9 +286,11 @@ public class ConcertResource {
         Booking newBooking = new Booking(bReq.getConcertId(), bReq.getDate(), toBook, Long.valueOf(getUserId(authCookie)));
         em.persist(newBooking);
 
-        em.getTransaction().commit();
+        int numBookedSeats = em.createQuery("SELECT s FROM Seat s WHERE s.isBooked = 'true' AND s.date = :date", Seat.class).setParameter("date", bReq.getDate()).getResultList().size();
 
-        processConcertNotification(bReq.getConcertId(), bReq.getDate());
+        processConcertNotification(bReq.getConcertId(), bReq.getDate(), numBookedSeats);
+
+        em.getTransaction().commit();
 
         em.close();
 
@@ -501,15 +503,14 @@ public class ConcertResource {
      * threshold for bookings has been exceeded, if true, resume the response and send notification to subscriber,
      * else do nothing
      */
-    private void processConcertNotification(Long concertId, LocalDateTime date) {
+    private void processConcertNotification(Long concertId, LocalDateTime date, int numBookedSeats) {
 
         ArrayList<ConcertSubscription> concertSubs = concertSubscriptions.get(concertId);
+        ArrayList<ConcertSubscription> notifiedSubs = new ArrayList<>();
 
         if (concertSubs == null) {
             return;
         }
-
-        em.getTransaction().begin();
 
         for (ConcertSubscription sub : concertSubs) {
 
@@ -517,18 +518,19 @@ public class ConcertResource {
             if (sub.concertSubscription.getDate().equals(date)) {
 
 
-                int numBookedSeats = em.createQuery("SELECT s FROM Seat s WHERE s.isBooked = 'true'", Seat.class).getResultList().size();
-
                 int numSeatsRemaining = 120 - numBookedSeats;
 
                 double percentageBooked = (numBookedSeats / (double) 120) * 100;
 
                 if (percentageBooked > sub.concertSubscription.getPercentageBooked()) {
                     sub.response.resume(Response.ok(new ConcertInfoNotificationDTO(numSeatsRemaining)).build());
+                    notifiedSubs.add(sub);
                 }
             }
         }
-        em.getTransaction().commit();
+        for(ConcertSubscription sub: notifiedSubs) {
+            concertSubs.remove(sub);
+        }
     }
 
 
